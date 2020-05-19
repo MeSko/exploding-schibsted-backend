@@ -1,0 +1,30 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json",
+      "ecmaVersion": 6,
+      "sourceType": "module",
+      "ecmaFeatures": {
+        "modules": true
+      }
+  },
+  "plugins": ["@typescript-eslint", "prettier"],
+  "rules": {
+    "@typescript-eslint/restrict-plus-operands": "error",
+    "quotes": [2, "double", "avoid-escape"],
+    "no-console": "error",
+    "prettier/prettier": "error",
+    "complexity": ["error", 5],
+    "max-nested-callbacks": ["error", 3],
+    "max-depth": ["error", 2]
+  },
+  "overrides": [
+    {
+      "files": ["**/*test.{ts,tsx}"],
+      "rules": {
+        "complexity": ["error", 25],
+        "max-nested-callbacks": ["error", 13]
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+version: '2'
+services:
+  api:
+    build: "."
+    command: ["npm", "run", "start:dev"]
+    volumes:
+      - .:/home/node/app:cached
+    ports:
+      - "4000:4000"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DEBUG: "API:*"
+      DEBUG_DEPTH: 15
+    depends_on:
+      - redis
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
