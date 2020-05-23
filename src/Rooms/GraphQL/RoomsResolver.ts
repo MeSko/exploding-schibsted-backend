@@ -10,7 +10,7 @@ import {
     Resolver
 } from "type-graphql";
 import { ContainerInstance } from "typedi";
-import { RoomsService } from "../RoomsService";
+import { RoomsService } from "../Domain/RoomsService";
 import { Room } from "./Types/Room";
 
 @Resolver()

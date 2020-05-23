@@ -1,8 +1,8 @@
 import { Service } from "typedi";
+import { PersistenceService } from "../../PersistenceService";
 import { v4 as uuidv4 } from "uuid";
-import { PersistenceService } from "../PersistenceService";
-import { Player } from "./GraphQL/Types/Player";
-import { BaseCard } from "./GraphQL/Types/Cards/BaseCard";
+import { Player } from "../../Players/GraphQL/Types/Player";
+import { BaseCard } from "../../Rooms/GraphQL/Types/Cards/BaseCard";
 
 type GameType = {
     id: string;
@@ -12,9 +12,11 @@ type GameType = {
     deck: Array<BaseCard>;
     discardPile: Array<BaseCard>
 };
+
 @Service()
 export class GamesService {
-    constructor(private db: PersistenceService) {}
+    constructor(private db: PersistenceService) {
+    }
 
     public async addGame({ name }: { name: string }): Promise<GameType> {
         const id = uuidv4();

@@ -1,6 +1,6 @@
 import { Service } from "typedi";
 import { v4 as uuidv4 } from "uuid";
-import { PersistenceService } from "../PersistenceService";
+import { PersistenceService } from "../../PersistenceService";
 
 type RoomType = {
     id: string;

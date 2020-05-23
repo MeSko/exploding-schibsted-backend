@@ -1,17 +1,7 @@
-import {
-    Arg,
-    Ctx,
-    Mutation,
-    PubSub,
-    Query,
-    Root,
-    Subscription,
-    PubSubEngine,
-    Resolver
-} from "type-graphql";
-import { ContainerInstance } from "typedi";
-import { PlayersService } from "../PlayersService";
+import { Arg, Ctx, Mutation, PubSub, PubSubEngine, Query, Resolver, Root, Subscription } from "type-graphql";
 import { Player } from "./Types/Player";
+import { ContainerInstance } from "typedi";
+import { PlayersService } from "../Domain/PlayersService";
 
 @Resolver()
 export class PlayersResolver {
