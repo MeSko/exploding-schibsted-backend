@@ -18,6 +18,11 @@ import {
     WtfCat
 } from "./GraphQL/Types/Card";
 
+export type DiscardCardType = {
+    time: number;
+    activeTurn: boolean;
+    card: Card;
+};
 export type PlayerType = {
     isActive: boolean;
     isDead: boolean;
@@ -29,7 +34,7 @@ export type GameType = {
     id: string;
     players: PlayerType[];
     draw: Card[];
-    discard: Card[];
+    discard: DiscardCardType[];
 };
 
 export const StartCards = [
@@ -53,6 +58,8 @@ function shuffle<T>(a: T[]): T[] {
     }
     return a;
 }
+
+const intervalBetweenMove = 5 * 1000; // 5 seconds;
 
 @Service()
 export class GameService {
@@ -100,5 +107,118 @@ export class GameService {
         if (gameId) {
             return await this.db.get<GameType>(`game.${gameId}`);
         }
+    }
+
+    public async playCard({ card, gameId }: { card: Card; gameId: string }) {
+        const game = await this.db.get<GameType>(`game.${gameId}`);
+        if (!game) {
+            throw new Error("No such game");
+        }
+        game.players.forEach(player => {
+            player.cards = player.cards.filter(playerCard => playerCard !== card);
+        });
+
+        game.discard.push({
+            time: Date.now(),
+            card,
+            activeTurn: true
+        });
+
+        await this.db.set(`game.${gameId}`, game);
+        return game;
+    }
+    public async moveTurn(gameId: string) {
+        const game = await this.db.get<GameType>(`game.${gameId}`);
+        if (!game) {
+            throw new Error("No such game");
+        }
+        const playedCards = game.discard.filter(discard => discard.activeTurn);
+        const lastPlayedTime = Math.max(...playedCards.map(playedCard => playedCard.time));
+        if (lastPlayedTime + intervalBetweenMove > Date.now()) {
+            throw new Error("Not too fast ?!");
+        }
+        if (!this.canSkip(game)) {
+            this.pickTop(game);
+        }
+        this.moveTurnToNextPlayer(game);
+        game.discard = game.discard.map(discard => ({ ...discard, activeTurn: false }));
+        await this.db.set(`game.${gameId}`, game);
+        return game;
+    }
+
+    public canSkip(game: GameType) {
+        return this.isInDiscardedWithoutNoBefore(game, Skip);
+    }
+
+    private pickTop(game: GameType) {
+        const topCard = game.draw.pop();
+        if (!topCard) {
+            throw new Error("Where are my cards ?!");
+        }
+        if (Boom.includes(topCard)) {
+            this.defuseBoom(topCard, game);
+        } else {
+            this.getActivePlayer(game).cards.push(topCard);
+        }
+    }
+
+    private isInDiscardedWithoutNoBefore(game: GameType, cardKind: Card[]) {
+        const discardedCards = game.discard.filter(discard => discard.activeTurn);
+        let isThere = false;
+        let ignoreNextCard = false;
+        discardedCards.forEach(discardedCard => {
+            if (ignoreNextCard) {
+                ignoreNextCard = false;
+                return;
+            }
+            if (cardKind.includes(discardedCard.card)) {
+                isThere = true;
+                return;
+            }
+            if (No.includes(discardedCard.card)) {
+                ignoreNextCard = true;
+                return;
+            }
+        });
+
+        return isThere;
+    }
+
+    private defuseBoom(topCard: Card, game: GameType) {
+        const defusedCardIndex = this.getActivePlayer(game).cards.findIndex(card =>
+            Defuse.includes(card)
+        );
+        if (defusedCardIndex === -1) {
+            this.getActivePlayer(game).isDead = true;
+        } else {
+            const defuseCard = this.getActivePlayer(game).cards.splice(defusedCardIndex, 1);
+            game.discard.push({
+                time: Date.now(),
+                card: topCard,
+                activeTurn: false
+            });
+            game.discard.push({
+                time: Date.now(),
+                card: defuseCard[0],
+                activeTurn: false
+            });
+        }
+    }
+
+    private getActivePlayer(game: GameType) {
+        const activePlayer = game.players.find(player => player.isActive);
+        if (!activePlayer) {
+            throw new Error("Where are my player");
+        }
+        return activePlayer;
+    }
+
+    private moveTurnToNextPlayer(game: GameType) {
+        const activePlayerIndex = game.players.findIndex(player => player.isActive);
+        const nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
+        game.players = game.players.map((player, index) => ({
+            ...player,
+            isActive: index === nextActivePlayerIndex
+        }));
     }
 }
