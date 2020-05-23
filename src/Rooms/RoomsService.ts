@@ -5,6 +5,7 @@ import { PersistenceService } from "../PersistenceService";
 type RoomType = {
     id: string;
     name: string;
+    gameId?: string;
 };
 @Service()
 export class RoomsService {
@@ -18,6 +19,16 @@ export class RoomsService {
         return room;
     }
 
+    public async editRoom({ id, name }: { id: string; name: string }): Promise<RoomType> {
+        const room = { id, name };
+        await this.db.set(`room.${id}`, room);
+
+        return room;
+    }
+
+    public async getRoom({ id }: { id: string}): Promise<RoomType|undefined> {
+        return await this.db.get<RoomType>(`room.${id}`);
+    }
     public async allRooms() {
         const keys = await this.db.getKeys("room.*");
         return await this.db.mget<RoomType>(keys);

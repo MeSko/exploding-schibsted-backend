@@ -7,13 +7,17 @@ import {
     Root,
     Subscription,
     PubSubEngine,
-    Resolver
+    Resolver,
+    FieldResolver,
+    ID
 } from "type-graphql";
 import { ContainerInstance } from "typedi";
 import { RoomsService } from "../RoomsService";
 import { Room } from "./Types/Room";
+import { Game } from "../../Game/GraphQL/Types/Game";
+import { GameService } from "../../Game/GameService";
 
-@Resolver()
+@Resolver(type => Room)
 export class RoomsResolver {
     @Subscription(type => Room, {
         topics: "ROOMS"
@@ -22,14 +26,25 @@ export class RoomsResolver {
         return newRoom;
     }
 
+    @Query(() => Room, { nullable: true })
+    public getRoom(
+        @Arg("id", type => ID) id: string,
+        @Ctx("container") container: ContainerInstance
+    ): Promise<Room | undefined> {
+        return container.get(RoomsService).getRoom({ id });
+    }
+
     @Query(() => [Room])
     public getRooms(@Ctx("container") container: ContainerInstance): Promise<Room[]> {
         return container.get(RoomsService).allRooms();
     }
 
-    @Query(type => String)
-    public test() {
-        return "test";
+    @FieldResolver(type => Game, { nullable: true })
+    public async game(
+        @Root() room: Room,
+        @Ctx("container") container: ContainerInstance
+    ): Promise<Game | undefined> {
+        return await container.get(GameService).getGameInRoom(room.id);
     }
 
     @Mutation(type => Room)
