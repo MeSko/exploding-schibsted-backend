@@ -23,7 +23,12 @@ export class UsersService {
         return user;
     }
 
-    public async getUser(id: string) {
-        return await this.db.get<UserType>(id);
+    public async getUser({ id }: { id: string }): Promise<UserType | undefined> {
+        return await this.db.get<UserType>(`user.${id}`);
+    }
+
+    public async allUsers() {
+        const keys = await this.db.getKeys("user.*");
+        return await this.db.mget<UserType>(keys);
     }
 }

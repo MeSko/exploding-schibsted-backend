@@ -1,15 +1,4 @@
-import {
-    Arg,
-    Ctx,
-    Mutation,
-    PubSub,
-    Query,
-    Root,
-    Subscription,
-    PubSubEngine,
-    Resolver,
-    FieldResolver, ID
-} from "type-graphql";
+import { Arg, Ctx, Mutation, Query, Root, Resolver, FieldResolver, ID } from "type-graphql";
 import { ContainerInstance } from "typedi";
 import { UsersService } from "../UsersService";
 import { User } from "./Types/User";
@@ -18,8 +7,13 @@ import { User } from "./Types/User";
 export class UsersResolver {
     @FieldResolver(type => String)
     public async name(@Root() user: User, @Ctx("container") container: ContainerInstance) {
-        const userData = await container.get(UsersService).getUser(user.id);
+        const userData = await container.get(UsersService).getUser({ id: user.id });
         return userData?.name || "";
+    }
+
+    @Query(() => [User])
+    public getUsers(@Ctx("container") container: ContainerInstance): Promise<User[]> {
+        return container.get(UsersService).allUsers();
     }
 
     @Mutation(type => User)
