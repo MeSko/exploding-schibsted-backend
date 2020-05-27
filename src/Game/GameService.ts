@@ -125,6 +125,9 @@ export class GameService {
         if (!game) {
             throw new Error("No such game");
         }
+        if (!this.isCardOnPlayersHand(game, card)) {
+            throw new Error("No such card");
+        }
         game.players.forEach(player => {
             player.cards = player.cards.filter(playerCard => playerCard !== card);
         });
@@ -153,6 +156,11 @@ export class GameService {
         if (!game) {
             throw new Error("No such game");
         }
+        cards.forEach(card => {
+            if (!this.isCardOnPlayersHand(game, card)) {
+                throw new Error("No such card");
+            }
+        });
         cards.forEach(card => {
             game.players.forEach(player => {
                 player.cards = player.cards.filter(playerCard => playerCard !== card);
@@ -246,10 +254,14 @@ export class GameService {
             this.isInDiscardedWithoutNoBefore(game, MelonCat) ||
             this.isInDiscardedWithoutNoBefore(game, WtfCat) ||
             this.isInDiscardedWithoutNoBefore(game, RainbowCat) ||
-            this.isInDiscardedWithoutNoBefore(game, BearCat)
+            this.isInDiscardedWithoutNoBefore(game, BearCat) ||
+            this.isInDiscardedWithoutNoBefore(game, TacoCat)
         );
     }
 
+    private isCardOnPlayersHand(game: GameType, card: Card) {
+        return !!game.players.find(player => player.cards.includes(card));
+    }
     private async doActionOnGame(gameId: string) {
         const game = await this.db.get<GameType>(`game.${gameId}`);
         if (!game) {
@@ -327,11 +339,8 @@ export class GameService {
             this.getActivePlayer(game).isDead = true;
         } else {
             const defuseCard = this.getActivePlayer(game).cards.splice(defusedCardIndex, 1);
-            game.discard.push({
-                time: Date.now(),
-                card: topCard,
-                activeTurn: false
-            });
+            const randomIndex = Math.floor(Math.random() * game.draw.length);
+            game.draw.splice(randomIndex, 0, topCard);
             game.discard.push({
                 time: Date.now(),
                 card: defuseCard[0],
