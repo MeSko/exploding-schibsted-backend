@@ -354,6 +354,10 @@ export class GameService {
         let attackDiscardedCard = this.getLastDiscardedWithoutNoBefore(game, Attack);
         if (attackDiscardedCard === undefined) {
             nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
+            game.players = game.players.map(player => ({
+                ...player,
+                isUnderAttack: false
+            }));
         } else {
             let nextPlayerId = attackDiscardedCard!.targetPlayer;
             nextActivePlayerIndex = game.players.findIndex(
