@@ -16,17 +16,10 @@ export class PersistenceService {
         };
         const auth = redisUrl?.auth?.split(":")[1];
         if (auth) {
-            options.port = Number(redisUrl.port) + 1;
-            options.password = auth;
-            options.db = 0;
-            options.tls = {
-                rejectUnauthorized: false,
-                requestCert: true,
-                //@ts-ignore
-                agent: false
-            };
+            this.redis = new IORedis.default(process.env.REDIS_URL);
+        } else {
+            this.redis = new IORedis.default(options);
         }
-        this.redis = new IORedis.default(options);
     }
 
     public disconnect() {

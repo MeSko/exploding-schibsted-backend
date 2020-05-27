@@ -31,28 +31,24 @@ process.on("SIGINT", async function() {
 void (async function bootstrap() {
     loggerInfo("Bootstraping");
     const redisUrl = parse(process.env.REDIS_URL || "");
-    const options: RedisOptions = {
+    let options: RedisOptions | string = {
         host: redisUrl.hostname || undefined,
         port: Number(redisUrl.port) || undefined,
         retryStrategy: times => Math.max(times * 100, 3000)
     };
     const auth = redisUrl?.auth?.split(":")[1];
     if (auth) {
-        options.port = Number(redisUrl.port) + 1;
-        options.password = auth;
-        options.db = 0;
-        options.tls = {
-            rejectUnauthorized: false,
-            requestCert: true,
-            //@ts-ignore
-            agent: false
-        };
+        pubSub = new RedisPubSub({
+            publisher: new Redis(process.env.REDIS_URL),
+            subscriber: new Redis(process.env.REDIS_URL)
+        });
+    } else {
+        // create Redis-based pub-sub
+        pubSub = new RedisPubSub({
+            publisher: new Redis(options),
+            subscriber: new Redis(options)
+        });
     }
-    // create Redis-based pub-sub
-    pubSub = new RedisPubSub({
-        publisher: new Redis(options),
-        subscriber: new Redis(options)
-    });
 
     loggerInfo("building GraphQL Schema");
     //build TypeGraphQL executable schema
