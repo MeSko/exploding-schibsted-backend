@@ -358,9 +358,15 @@ export class GameService {
     }
 
     private moveTurnToNextPlayer(game: GameType) {
+        let attackDiscardedCard = this.getLastDiscardedWithoutNoBefore(game, Attack);
+        if (game.players.filter(player => player.isUnderAttack && !player.isDead)) {
+            game.players = game.players.map(player => ({
+                ...player,
+                isUnderAttack: false
+            }));
+        }
         const activePlayerIndex = game.players.findIndex(player => player.isActive);
         let nextActivePlayerIndex: number;
-        let attackDiscardedCard = this.getLastDiscardedWithoutNoBefore(game, Attack);
         if (attackDiscardedCard === undefined) {
             nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
             game.players = game.players.map(player => ({
