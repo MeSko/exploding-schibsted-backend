@@ -128,6 +128,15 @@ export class GameService {
         return game;
     }
 
+    public async showFuture(gameId: string) {
+        const game = await this.doActionOnGame(gameId);
+        if (!this.canSeeFuture(game)) {
+            throw new Error("Can't shuffle");
+        }
+        const cards = game.draw.slice(0, 3);
+        return cards;
+    }
+
     public async shuffleDeck(gameId: string) {
         const game = await this.doActionOnGame(gameId);
         if (!this.canShuffle(game)) {
@@ -149,6 +158,9 @@ export class GameService {
         return game;
     }
 
+    public canSeeFuture(game: GameType) {
+        return this.isInDiscardedWithoutNoBefore(game, Future);
+    }
     public canShuffle(game: GameType) {
         return this.isInDiscardedWithoutNoBefore(game, Shuffle);
     }

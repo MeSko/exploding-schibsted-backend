@@ -49,6 +49,16 @@ export class GameResolver {
         return game;
     }
 
+    @Mutation(type => [Card])
+    async showFuture(
+        @Arg("gameId", type => ID) gameId: string,
+        @Ctx("container") container: ContainerInstance,
+        @PubSub() pubSub: PubSubEngine
+    ): Promise<Card[]> {
+        const cards = await container.get(GameService).showFuture(gameId);
+        return cards;
+    }
+
     @Mutation(type => Game)
     async moveTurn(
         @Arg("gameId", type => ID) gameId: string,
