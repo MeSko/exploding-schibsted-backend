@@ -2,10 +2,11 @@ import { Service } from "typedi";
 import { v4 as uuidv4 } from "uuid";
 import { PersistenceService } from "../PersistenceService";
 
-type RoomType = {
+export type RoomType = {
     id: string;
     name: string;
     gameId?: string;
+    users?: string[];
 };
 @Service()
 export class RoomsService {
@@ -19,8 +20,38 @@ export class RoomsService {
         return room;
     }
 
+    public async addUser({ id, userId }: { id: string; userId: string }): Promise<RoomType> {
+        const room = await this.db.get<RoomType>(`room.${id}`);
+        if (!room) {
+            throw new Error("No such room");
+        }
+        if (!room.users) {
+            room.users = [];
+        }
+        room.users.push(userId);
+        await this.db.set(`room.${id}`, room);
+        return room;
+    }
+
+    public async removeUser({ id, userId }: { id: string; userId: string }): Promise<RoomType> {
+        const room = await this.db.get<RoomType>(`room.${id}`);
+        if (!room) {
+            throw new Error("No such room");
+        }
+        if (!room.users) {
+            room.users = [];
+        }
+        room.users.filter(user => user != userId);
+        await this.db.set(`room.${id}`, room);
+        return room;
+    }
+
     public async editRoom({ id, name }: { id: string; name: string }): Promise<RoomType> {
-        const room = { id, name };
+        const room = await this.db.get<RoomType>(`room.${id}`);
+        if (!room) {
+            throw new Error("No such room");
+        }
+        room.name = name;
         await this.db.set(`room.${id}`, room);
 
         return room;
