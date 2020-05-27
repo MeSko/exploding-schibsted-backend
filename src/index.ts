@@ -29,7 +29,7 @@ process.on("SIGINT", async function() {
 });
 
 void (async function bootstrap() {
-    loggerInfo("Bootstraping");
+    loggerInfo("Boooooootstraping");
     const redisUrl = parse(process.env.REDIS_URL || "");
     let options: RedisOptions | string = {
         host: redisUrl.hostname || undefined,
