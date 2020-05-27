@@ -76,15 +76,16 @@ export class GameService {
         usersIds: string[];
     }): Promise<GameType> {
         const id = uuidv4();
-        const defuseCards = shuffle([...Defuse]);
+        // const defuseCards = shuffle([...Defuse]);
         const draw: Card[] = shuffle([...StartCards]);
         const players = usersIds.map(
             (userId, index): PlayerType => {
-                const defuse = defuseCards.pop();
-                if (!defuse) {
-                    throw new Error("Ups defuse me");
-                }
-                const cards = [defuse, ...draw.splice(0, 7)];
+                // const defuse = defuseCards.pop();
+                // if (!defuse) {
+                //     throw new Error("Ups defuse me");
+                // }
+                // const cards = [defuse, ...draw.splice(0, 7)];
+                const cards = [...draw.splice(0, 7)];
                 return {
                     isActive: index === 0,
                     isDead: false,
@@ -203,7 +204,7 @@ export class GameService {
         if (!this.canSkip(game)) {
             this.pickTop(game);
         }
-        if (game.players.filter(player => player.isWinner)) {
+        if (game.players.filter(player => player.isWinner).length !== 0) {
             game.finished = true;
             return game;
         }
@@ -380,7 +381,7 @@ export class GameService {
 
     private moveTurnToNextPlayer(game: GameType) {
         let attackDiscardedCard = this.getLastDiscardedWithoutNoBefore(game, Attack);
-        if (game.players.filter(player => player.isUnderAttack && !player.isDead)) {
+        if (game.players.filter(player => player.isUnderAttack && !player.isDead).length !== 0) {
             game.players = game.players.map(player => ({
                 ...player,
                 isUnderAttack: false
@@ -392,8 +393,9 @@ export class GameService {
         let nextActivePlayerIndex: number;
         if (attackDiscardedCard === undefined) {
             let lookingForPlayer = true;
+            let increment: number = 1;
             while(lookingForPlayer) {
-                nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
+                nextActivePlayerIndex = (activePlayerIndex + increment++) % game.players.length;
                 if(game.players[nextActivePlayerIndex].isDead === false) {
                     lookingForPlayer = false;
                 }
