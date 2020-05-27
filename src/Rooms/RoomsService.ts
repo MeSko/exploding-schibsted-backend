@@ -26,7 +26,7 @@ export class RoomsService {
         return room;
     }
 
-    public async getRoom({ id }: { id: string}): Promise<RoomType|undefined> {
+    public async getRoom({ id }: { id: string }): Promise<RoomType | undefined> {
         return await this.db.get<RoomType>(`room.${id}`);
     }
     public async allRooms() {
