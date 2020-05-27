@@ -16,6 +16,7 @@ export class PersistenceService {
         };
         const auth = redisUrl?.auth?.split(":")[1];
         if (auth) {
+            options.port = Number(redisUrl.port) + 1;
             options.password = auth;
             options.db = 0;
             options.tls = {
