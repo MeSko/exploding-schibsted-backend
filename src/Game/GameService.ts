@@ -129,16 +129,28 @@ export class GameService {
         await this.db.set(`game.${gameId}`, game);
         return game;
     }
+
+    public async showFuture(gameId: string) {
+        const game = await this.doActionOnGame(gameId);
+        if (!this.canSeeFuture(game)) {
+            throw new Error("Can't shuffle");
+        }
+        const cards = game.draw.slice(0, 3);
+        return cards;
+    }
+
+    public async shuffleDeck(gameId: string) {
+        const game = await this.doActionOnGame(gameId);
+        if (!this.canShuffle(game)) {
+            throw new Error("Can't shuffle");
+        }
+        game.draw = shuffle(game.draw);
+        await this.db.set(`game.${gameId}`, game);
+        return game;
+    }
+
     public async moveTurn(gameId: string) {
-        const game = await this.db.get<GameType>(`game.${gameId}`);
-        if (!game) {
-            throw new Error("No such game");
-        }
-        const playedCards = game.discard.filter(discard => discard.activeTurn);
-        const lastPlayedTime = Math.max(...playedCards.map(playedCard => playedCard.time));
-        if (lastPlayedTime + intervalBetweenMove > Date.now()) {
-            throw new Error("Not too fast ?!");
-        }
+        const game = await this.doActionOnGame(gameId);
         if (!this.canSkip(game)) {
             this.pickTop(game);
         }
@@ -148,8 +160,27 @@ export class GameService {
         return game;
     }
 
+    public canSeeFuture(game: GameType) {
+        return this.isInDiscardedWithoutNoBefore(game, Future);
+    }
+    public canShuffle(game: GameType) {
+        return this.isInDiscardedWithoutNoBefore(game, Shuffle);
+    }
     public canSkip(game: GameType) {
         return this.isInDiscardedWithoutNoBefore(game, Skip);
+    }
+
+    private async doActionOnGame(gameId: string) {
+        const game = await this.db.get<GameType>(`game.${gameId}`);
+        if (!game) {
+            throw new Error("No such game");
+        }
+        const playedCards = game.discard.filter(discard => discard.activeTurn);
+        const lastPlayedTime = Math.max(...playedCards.map(playedCard => playedCard.time));
+        if (lastPlayedTime + intervalBetweenMove > Date.now()) {
+            throw new Error("Not too fast ?!");
+        }
+        return game;
     }
 
     private pickTop(game: GameType) {
