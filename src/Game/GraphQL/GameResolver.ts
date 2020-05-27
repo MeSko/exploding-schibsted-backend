@@ -39,6 +39,17 @@ export class GameResolver {
     }
 
     @Mutation(type => Game)
+    async shuffle(
+        @Arg("gameId", type => ID) gameId: string,
+        @Ctx("container") container: ContainerInstance,
+        @PubSub() pubSub: PubSubEngine
+    ): Promise<Game> {
+        const game = await container.get(GameService).shuffleDeck(gameId);
+        await pubSub.publish(`GAME${gameId}`, game);
+        return game;
+    }
+
+    @Mutation(type => Game)
     async moveTurn(
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,

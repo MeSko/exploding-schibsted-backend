@@ -133,7 +133,7 @@ export class GameService {
         if (!this.canShuffle(game)) {
             throw new Error("Can't shuffle");
         }
-        shuffle(game.draw);
+        game.draw = shuffle(game.draw);
         await this.db.set(`game.${gameId}`, game);
         return game;
     }
