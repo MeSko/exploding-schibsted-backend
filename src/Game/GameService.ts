@@ -199,6 +199,36 @@ export class GameService {
         return game;
     }
 
+    public async grabRandomCard(gameId: string) {
+        const game = await this.doActionOnGame(gameId);
+        if (!this.canGrabRandomCard(game)) {
+            throw new Error("Can't grab random card");
+        }
+        const playedCards = game.discard
+            .filter(discard => discard.activeTurn)
+            .filter(card => !!card.targetPlayer);
+
+        const targetUserId = playedCards[0].targetPlayer;
+
+        let grabbedCard: Card;
+        // Draw one card from attacked player
+        game.players.forEach(player => {
+            if (player.userId === targetUserId) {
+                grabbedCard = player.cards[Math.floor(Math.random() * player.cards.length)];
+                player.cards = player.cards.filter(card => card === grabbedCard);
+            }
+        });
+
+        // Push drown card for attacking player
+        game.players.forEach(player => {
+            if (player.isActive) {
+                player.cards.push(grabbedCard);
+            }
+        });
+        await this.db.set(`game.${gameId}`, game);
+        return game;
+    }
+
     public canSeeFuture(game: GameType) {
         return this.isInDiscardedWithoutNoBefore(game, Future);
     }
@@ -206,7 +236,18 @@ export class GameService {
         return this.isInDiscardedWithoutNoBefore(game, Shuffle);
     }
     public canSkip(game: GameType) {
-        return this.isInDiscardedWithoutNoBefore(game, Skip) || this.isInDiscardedWithoutNoBefore(game, Attack);
+        return (
+            this.isInDiscardedWithoutNoBefore(game, Skip) ||
+            this.isInDiscardedWithoutNoBefore(game, Attack)
+        );
+    }
+    public canGrabRandomCard(game: GameType) {
+        return (
+            this.isInDiscardedWithoutNoBefore(game, MelonCat) ||
+            this.isInDiscardedWithoutNoBefore(game, WtfCat) ||
+            this.isInDiscardedWithoutNoBefore(game, RainbowCat) ||
+            this.isInDiscardedWithoutNoBefore(game, BearCat)
+        );
     }
 
     private async doActionOnGame(gameId: string) {
@@ -315,8 +356,8 @@ export class GameService {
             nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
         } else {
             let nextPlayerId = attackDiscardedCard!.targetPlayer;
-            nextActivePlayerIndex = game.players.findIndex(player =>
-                player.userId === nextPlayerId
+            nextActivePlayerIndex = game.players.findIndex(
+                player => player.userId === nextPlayerId
             );
             game.players = game.players.map((player, index) => ({
                 ...player,

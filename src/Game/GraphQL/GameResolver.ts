@@ -45,7 +45,7 @@ export class GameResolver {
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
         @PubSub() pubSub: PubSubEngine,
-        @Arg("targetPlayerId", type => ID, { nullable: true }) targetPlayerId: string | undefined
+        @Arg("targetPlayerId", type => ID) targetPlayerId: string
     ): Promise<Game> {
         // TODO check is card in my hand
         const game = await container.get(GameService).play2Cards({ cards, gameId, targetPlayerId });
@@ -92,6 +92,17 @@ export class GameResolver {
         @Ctx("container") container: ContainerInstance
     ): Promise<Game> {
         return await container.get(GameService).createGame({ usersIds, roomId });
+    }
+
+    @Mutation(type => Game)
+    async grabRandomCard(
+        @Arg("gameId", type => ID) gameId: string,
+        @Ctx("container") container: ContainerInstance,
+        @PubSub() pubSub: PubSubEngine
+    ): Promise<Game> {
+        const game = await container.get(GameService).grabRandomCard(gameId);
+        await pubSub.publish(`GAME${gameId}`, game);
+        return game;
     }
 
     @FieldResolver(type => Number)
