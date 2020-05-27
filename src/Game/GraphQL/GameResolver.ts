@@ -30,10 +30,11 @@ export class GameResolver {
         @Arg("card", type => Card) card: Card,
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
-        @PubSub() pubSub: PubSubEngine
-    ): Promise<Game> {
+        @PubSub() pubSub: PubSubEngine,
+        @Arg("targetPlayerId", type => ID, {nullable: true}) targetPlayerId: string | undefined
+): Promise<Game> {
         // TODO check is card in my hand
-        const game = await container.get(GameService).playCard({ card, gameId });
+        const game = await container.get(GameService).playCard({ card, gameId, targetPlayerId });
         await pubSub.publish(`GAME${gameId}`, game);
         return game;
     }

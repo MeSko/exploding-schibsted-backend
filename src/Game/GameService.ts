@@ -22,6 +22,7 @@ export type DiscardCardType = {
     time: number;
     activeTurn: boolean;
     card: Card;
+    targetPlayer?: string;
 };
 export type PlayerType = {
     isActive: boolean;
@@ -109,7 +110,7 @@ export class GameService {
         }
     }
 
-    public async playCard({ card, gameId }: { card: Card; gameId: string }) {
+    public async playCard({ card, gameId, targetPlayerId }: { card: Card; gameId: string, targetPlayerId: string | undefined }) {
         const game = await this.db.get<GameType>(`game.${gameId}`);
         if (!game) {
             throw new Error("No such game");
@@ -121,7 +122,8 @@ export class GameService {
         game.discard.push({
             time: Date.now(),
             card,
-            activeTurn: true
+            activeTurn: true,
+            targetPlayer: targetPlayerId
         });
 
         await this.db.set(`game.${gameId}`, game);
