@@ -22,6 +22,11 @@
   },
   "author": "SEALS",
   "dependencies": {
+    "@types/graphql": "^14.5.0",
+    "@types/ioredis": "^4.14.7",
+    "@types/jsonwebtoken": "^8.3.7",
+    "@types/node": "^13.7.1",
+    "@types/uuid": "^7.0.3",
     "@elastic/elasticsearch": "^7.6.1",
     "@types/cookie": "^0.3.3",
     "@types/debug": "^4.1.5",
@@ -47,20 +52,15 @@
     "reflect-metadata": "^0.1.13",
     "type-graphql": "^0.17.6",
     "typedi": "^0.8.0",
-    "uuid": "^8.0.0"
+    "uuid": "^8.0.0",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.5"
   },
   "devDependencies": {
-    "@types/graphql": "^14.5.0",
-    "@types/ioredis": "^4.14.7",
-    "@types/jsonwebtoken": "^8.3.7",
-    "@types/node": "^13.7.1",
-    "@types/uuid": "^7.0.3",
     "@typescript-eslint/eslint-plugin": "^2.20.0",
     "@typescript-eslint/parser": "^2.20.0",
     "eslint": "^6.8.0",
     "eslint-plugin-prettier": "^3.1.2",
-    "prettier": "^1.19.1",
-    "ts-node": "^8.6.2",
-    "typescript": "^3.7.5"
+    "prettier": "^1.19.1"
   }
 }
