@@ -224,7 +224,7 @@ export class GameService {
         game.players.forEach(player => {
             if (player.userId === targetUserId) {
                 grabbedCard = player.cards[Math.floor(Math.random() * player.cards.length)];
-                player.cards = player.cards.filter(card => card === grabbedCard);
+                player.cards = player.cards.filter(card => card !== grabbedCard);
             }
         });
 
