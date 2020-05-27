@@ -110,7 +110,15 @@ export class GameService {
         }
     }
 
-    public async playCard({ card, gameId, targetPlayerId }: { card: Card; gameId: string, targetPlayerId: string | undefined }) {
+    public async playCard({
+        card,
+        gameId,
+        targetPlayerId
+    }: {
+        card: Card;
+        gameId: string;
+        targetPlayerId: string | undefined;
+    }) {
         const game = await this.db.get<GameType>(`game.${gameId}`);
         if (!game) {
             throw new Error("No such game");
@@ -124,6 +132,35 @@ export class GameService {
             card,
             activeTurn: true,
             targetPlayer: targetPlayerId
+        });
+
+        await this.db.set(`game.${gameId}`, game);
+        return game;
+    }
+
+    public async play2Cards({
+        cards,
+        gameId,
+        targetPlayerId
+    }: {
+        cards: Card[];
+        gameId: string;
+        targetPlayerId: string | undefined;
+    }) {
+        const game = await this.db.get<GameType>(`game.${gameId}`);
+        if (!game) {
+            throw new Error("No such game");
+        }
+        cards.forEach(card => {
+            game.players.forEach(player => {
+                player.cards = player.cards.filter(playerCard => playerCard !== card);
+            });
+            game.discard.push({
+                time: Date.now(),
+                card,
+                activeTurn: true,
+                targetPlayer: targetPlayerId
+            });
         });
 
         await this.db.set(`game.${gameId}`, game);

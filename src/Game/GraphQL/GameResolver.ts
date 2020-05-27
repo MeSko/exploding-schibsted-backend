@@ -31,10 +31,24 @@ export class GameResolver {
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
         @PubSub() pubSub: PubSubEngine,
-        @Arg("targetPlayerId", type => ID, {nullable: true}) targetPlayerId: string | undefined
-): Promise<Game> {
+        @Arg("targetPlayerId", type => ID, { nullable: true }) targetPlayerId: string | undefined
+    ): Promise<Game> {
         // TODO check is card in my hand
         const game = await container.get(GameService).playCard({ card, gameId, targetPlayerId });
+        await pubSub.publish(`GAME${gameId}`, game);
+        return game;
+    }
+
+    @Mutation(type => Game)
+    async play2Cards(
+        @Arg("cards", type => [Card]) cards: Card[],
+        @Arg("gameId", type => ID) gameId: string,
+        @Ctx("container") container: ContainerInstance,
+        @PubSub() pubSub: PubSubEngine,
+        @Arg("targetPlayerId", type => ID, { nullable: true }) targetPlayerId: string | undefined
+    ): Promise<Game> {
+        // TODO check is card in my hand
+        const game = await container.get(GameService).play2Cards({ cards, gameId, targetPlayerId });
         await pubSub.publish(`GAME${gameId}`, game);
         return game;
     }
