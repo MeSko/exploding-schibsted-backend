@@ -8,11 +8,23 @@ export class PersistenceService {
 
     constructor() {
         const redisUrl = parse(process.env.REDIS_URL || "");
+
         const options: IORedis.RedisOptions = {
             host: redisUrl.hostname || undefined,
             port: Number(redisUrl.port) || undefined,
             retryStrategy: times => Math.max(times * 100, 3000)
         };
+        const auth = redisUrl?.auth?.split(":")[1];
+        if (auth) {
+            options.password = auth;
+            options.db = 0;
+            options.tls = {
+                rejectUnauthorized: false,
+                requestCert: true,
+                //@ts-ignore
+                agent: false
+            };
+        }
         this.redis = new IORedis.default(options);
     }
 
