@@ -132,7 +132,7 @@ export class GameService {
             player.cards = player.cards.filter(playerCard => playerCard !== card);
         });
 
-        game.discard.push({
+        game.discard.unshift({
             time: Date.now(),
             card,
             activeTurn: true,
@@ -165,7 +165,7 @@ export class GameService {
             game.players.forEach(player => {
                 player.cards = player.cards.filter(playerCard => playerCard !== card);
             });
-            game.discard.push({
+            game.discard.unshift({
                 time: Date.now(),
                 card,
                 activeTurn: true,
@@ -198,6 +198,7 @@ export class GameService {
 
     public async moveTurn(gameId: string) {
         const game = await this.doActionOnGame(gameId);
+        console.log("moveTurn", game);
         if (!this.canSkip(game)) {
             this.pickTop(game);
         }
@@ -223,7 +224,7 @@ export class GameService {
         game.players.forEach(player => {
             if (player.userId === targetUserId) {
                 grabbedCard = player.cards[Math.floor(Math.random() * player.cards.length)];
-                player.cards = player.cards.filter(card => card === grabbedCard);
+                player.cards = player.cards.filter(card => card !== grabbedCard);
             }
         });
 
@@ -276,14 +277,17 @@ export class GameService {
     }
 
     private pickTop(game: GameType) {
-        const topCard = game.draw.pop();
+        const topCard = game.draw.shift();
+        console.log("pickTop", topCard);
         if (!topCard) {
             throw new Error("Where are my cards ?!");
         }
         if (Boom.includes(topCard)) {
             this.defuseBoom(topCard, game);
         } else {
+            console.log("player got card before", game);
             this.getActivePlayer(game).cards.push(topCard);
+            console.log("player got card after", game);
         }
     }
 
@@ -332,16 +336,28 @@ export class GameService {
     }
 
     private defuseBoom(topCard: Card, game: GameType) {
+        console.log("defuseBoom", topCard);
         const defusedCardIndex = this.getActivePlayer(game).cards.findIndex(card =>
             Defuse.includes(card)
         );
         if (defusedCardIndex === -1) {
             this.getActivePlayer(game).isDead = true;
+            console.log("dead", game);
+            const deadPlayers = game.players.filter(player => player.isDead);
+            //Set winner
+            if (deadPlayers.length + 1 === game.players.length) {
+                game.players
+                    .filter(player => !player.isDead)
+                    .forEach(player => {
+                        player.isWinner = true;
+                    });
+                console.log("winner", game);
+            }
         } else {
             const defuseCard = this.getActivePlayer(game).cards.splice(defusedCardIndex, 1);
             const randomIndex = Math.floor(Math.random() * game.draw.length);
             game.draw.splice(randomIndex, 0, topCard);
-            game.discard.push({
+            game.discard.unshift({
                 time: Date.now(),
                 card: defuseCard[0],
                 activeTurn: false

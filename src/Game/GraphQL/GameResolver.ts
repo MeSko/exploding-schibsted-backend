@@ -109,6 +109,10 @@ export class GameResolver {
     public drawPile(@Root() game: GameType) {
         return game.draw.length;
     }
+    @FieldResolver(type => [Card])
+    public drawPileDebug(@Root() game: GameType) {
+        return game.draw;
+    }
 
     @FieldResolver(type => [Card])
     public discardPile(@Root() game: GameType): Card[] {
