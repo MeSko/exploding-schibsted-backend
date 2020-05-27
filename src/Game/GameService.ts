@@ -28,6 +28,7 @@ export type PlayerType = {
     isActive: boolean;
     isDead: boolean;
     isWinner: boolean;
+    isUnderAttack: boolean;
     userId: string;
     cards: Card[];
 };
@@ -87,6 +88,7 @@ export class GameService {
                     isActive: index === 0,
                     isDead: false,
                     isWinner: false,
+                    isUnderAttack: false,
                     userId,
                     cards
                 };
@@ -204,7 +206,7 @@ export class GameService {
         return this.isInDiscardedWithoutNoBefore(game, Shuffle);
     }
     public canSkip(game: GameType) {
-        return this.isInDiscardedWithoutNoBefore(game, Skip);
+        return this.isInDiscardedWithoutNoBefore(game, Skip) || this.isInDiscardedWithoutNoBefore(game, Attack);
     }
 
     private async doActionOnGame(gameId: string) {
@@ -230,6 +232,28 @@ export class GameService {
         } else {
             this.getActivePlayer(game).cards.push(topCard);
         }
+    }
+
+    private getLastDiscardedWithoutNoBefore(game: GameType, cardKind: Card[]) {
+        const discardedCards = game.discard.filter(discard => discard.activeTurn);
+        let discarded: DiscardCardType | undefined;
+        let ignoreNextCard = false;
+        discardedCards.forEach(discardedCard => {
+            if (ignoreNextCard) {
+                ignoreNextCard = false;
+                return;
+            }
+            if (cardKind.includes(discardedCard.card)) {
+                discarded = discardedCard;
+                return;
+            }
+            if (No.includes(discardedCard.card)) {
+                ignoreNextCard = true;
+                return;
+            }
+        });
+
+        return discarded;
     }
 
     private isInDiscardedWithoutNoBefore(game: GameType, cardKind: Card[]) {
@@ -285,7 +309,20 @@ export class GameService {
 
     private moveTurnToNextPlayer(game: GameType) {
         const activePlayerIndex = game.players.findIndex(player => player.isActive);
-        const nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
+        let nextActivePlayerIndex: number;
+        let attackDiscardedCard = this.getLastDiscardedWithoutNoBefore(game, Attack);
+        if (attackDiscardedCard === undefined) {
+            nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
+        } else {
+            let nextPlayerId = attackDiscardedCard!.targetPlayer;
+            nextActivePlayerIndex = game.players.findIndex(player =>
+                player.userId === nextPlayerId
+            );
+            game.players = game.players.map((player, index) => ({
+                ...player,
+                isUnderAttack: index === nextActivePlayerIndex
+            }));
+        }
         game.players = game.players.map((player, index) => ({
             ...player,
             isActive: index === nextActivePlayerIndex
