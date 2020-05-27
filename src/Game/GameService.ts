@@ -37,6 +37,7 @@ export type GameType = {
     players: PlayerType[];
     draw: Card[];
     discard: DiscardCardType[];
+    finished?: boolean;
 };
 
 export const StartCards = [
@@ -201,6 +202,10 @@ export class GameService {
         console.log("moveTurn", game);
         if (!this.canSkip(game)) {
             this.pickTop(game);
+        }
+        if (game.players.filter(player => player.isWinner)) {
+            game.finished = true;
+            return game;
         }
         this.moveTurnToNextPlayer(game);
         game.discard = game.discard.map(discard => ({ ...discard, activeTurn: false }));
@@ -380,11 +385,19 @@ export class GameService {
                 ...player,
                 isUnderAttack: false
             }));
+            //don't move index as this is additional turn after attack card
+            return;
         }
         const activePlayerIndex = game.players.findIndex(player => player.isActive);
         let nextActivePlayerIndex: number;
         if (attackDiscardedCard === undefined) {
-            nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
+            let lookingForPlayer = true;
+            while(lookingForPlayer) {
+                nextActivePlayerIndex = (activePlayerIndex + 1) % game.players.length;
+                if(game.players[nextActivePlayerIndex].isDead === false) {
+                    lookingForPlayer = false;
+                }
+            }
             game.players = game.players.map(player => ({
                 ...player,
                 isUnderAttack: false
