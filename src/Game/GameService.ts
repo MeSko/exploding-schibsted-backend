@@ -342,6 +342,17 @@ export class GameService {
         );
         if (defusedCardIndex === -1) {
             this.getActivePlayer(game).isDead = true;
+            console.log("dead", game);
+            const deadPlayers = game.players.filter(player => player.isDead);
+            //Set winner
+            if (deadPlayers.length + 1 === game.players.length) {
+                game.players
+                    .filter(player => !player.isDead)
+                    .forEach(player => {
+                        player.isWinner = true;
+                    });
+                console.log("winner", game);
+            }
         } else {
             const defuseCard = this.getActivePlayer(game).cards.splice(defusedCardIndex, 1);
             const randomIndex = Math.floor(Math.random() * game.draw.length);
