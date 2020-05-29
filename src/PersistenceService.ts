@@ -8,12 +8,18 @@ export class PersistenceService {
 
     constructor() {
         const redisUrl = parse(process.env.REDIS_URL || "");
+
         const options: IORedis.RedisOptions = {
             host: redisUrl.hostname || undefined,
             port: Number(redisUrl.port) || undefined,
             retryStrategy: times => Math.max(times * 100, 3000)
         };
-        this.redis = new IORedis.default(options);
+        const auth = redisUrl?.auth?.split(":")[1];
+        if (auth) {
+            this.redis = new IORedis.default(process.env.REDIS_URL);
+        } else {
+            this.redis = new IORedis.default(options);
+        }
     }
 
     public disconnect() {
@@ -36,6 +42,13 @@ export class PersistenceService {
             return JSON.parse(data) as T;
         }
         return undefined;
+    }
+    public async getOrFail<T>(key: string, msg: string = "Object not found") {
+        const data = await this.redis.get(key);
+        if (typeof data === "string") {
+            return JSON.parse(data) as T;
+        }
+        throw new Error(msg);
     }
     public async mget<T>(keys: string[]) {
         if (keys.length === 0) {

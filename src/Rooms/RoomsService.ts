@@ -1,25 +1,17 @@
 import { Service } from "typedi";
 import { v4 as uuidv4 } from "uuid";
 import { PersistenceService } from "../PersistenceService";
-import { UserType } from "../Users/UsersService";
 
-type RoomType = {
+export type RoomType = {
     id: string;
     name: string;
     gameId?: string;
-    users?: UserType[];
+    users?: string[];
 };
-
-export function checkIsDefined<T>({obj, name}: {obj: T | undefined | null, name: string}): T {
-    if (obj === undefined || obj === null) {
-        throw new Error(`${name} is not defined`)
-    }
-    
-    return obj;
-}
 
 @Service()
 export class RoomsService {
+    readonly noSuchRoom = "No such room";
     constructor(private db: PersistenceService) {}
 
     public async addRoom({ name }: { name: string }): Promise<RoomType> {
@@ -30,8 +22,29 @@ export class RoomsService {
         return room;
     }
 
+    public async addUser({ id, userId }: { id: string; userId: string }): Promise<RoomType> {
+        const room = await this.db.getOrFail<RoomType>(`room.${id}`, this.noSuchRoom);
+        if (!room.users) {
+            room.users = [];
+        }
+        room.users.push(userId);
+        await this.db.set(`room.${id}`, room);
+        return room;
+    }
+
+    public async removeUser({ id, userId }: { id: string; userId: string }): Promise<RoomType> {
+        const room = await this.db.getOrFail<RoomType>(`room.${id}`, this.noSuchRoom);
+        if (!room.users) {
+            room.users = [];
+        }
+        room.users.filter(user => user != userId);
+        await this.db.set(`room.${id}`, room);
+        return room;
+    }
+
     public async editRoom({ id, name }: { id: string; name: string }): Promise<RoomType> {
-        const room = { id, name };
+        const room = await this.db.getOrFail<RoomType>(`room.${id}`, this.noSuchRoom);
+        room.name = name;
         await this.db.set(`room.${id}`, room);
 
         return room;
