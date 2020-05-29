@@ -87,11 +87,31 @@ export class GameResolver {
 
     @Mutation(type => Game)
     async createGame(
-        @Arg("usersIds", type => [ID]) usersIds: string[],
         @Arg("roomId", type => ID) roomId: string,
         @Ctx("container") container: ContainerInstance
     ): Promise<Game> {
-        return await container.get(GameService).createGame({ usersIds, roomId });
+        return await container.get(GameService).createGame({ roomId });
+    }
+
+    // @Mutation(type => Game)
+    // async startGame(
+    //     @Arg("usersIds", type => [ID]) usersIds: string[],
+    //     @Arg("roomId", type => ID) roomId: string,
+    //     @Ctx("container") container: ContainerInstance
+    // ): Promise<Game> {
+    //     return await container.get(GameService).createGame({ usersIds, roomId });
+    // }
+
+    @Mutation(type => Game)
+    async joinPlayer(
+        @Arg("userId", type => ID) userId: string,
+        @Arg("gameId", type=> ID) gameId: string,
+        @Ctx("container") container: ContainerInstance,
+        @PubSub() pubSub: PubSubEngine,
+    ): Promise<Game> {
+        const game = await container.get(GameService).joinPlayer({ userId, gameId });
+        await pubSub.publish(`GAME${gameId}`, game);
+        return game;
     }
 
     @Mutation(type => Game)

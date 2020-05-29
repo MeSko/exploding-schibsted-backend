@@ -17,6 +17,7 @@ import {
     TacoCat,
     WtfCat
 } from "./GraphQL/Types/Card";
+import { UserType } from "../Users/UsersService";
 
 export type DiscardCardType = {
     time: number;
@@ -37,7 +38,7 @@ export type GameType = {
     players: PlayerType[];
     draw: Card[];
     discard: DiscardCardType[];
-    finished?: boolean;
+    finished: boolean;
 };
 
 export const StartCards = [
@@ -66,43 +67,74 @@ const intervalBetweenMove = 5 * 1000; // 5 seconds;
 
 @Service()
 export class GameService {
-    constructor(private db: PersistenceService) {}
+    readonly gameNotFound = "Game not found";
+    readonly userNotFound = "User not found";
+    constructor(private db: PersistenceService) {
+    }
 
     public async createGame({
-        usersIds,
         roomId
     }: {
         roomId: string;
-        usersIds: string[];
     }): Promise<GameType> {
         const id = uuidv4();
-        const defuseCards = shuffle([...Defuse]);
-        const draw: Card[] = shuffle([...StartCards]);
-        const players = usersIds.map(
-            (userId, index): PlayerType => {
-                const defuse = defuseCards.pop();
-                if (!defuse) {
-                    throw new Error("Ups defuse me");
-                }
-                const cards = [defuse, ...draw.splice(0, 7)];
-                return {
-                    isActive: index === 0,
-                    isDead: false,
-                    isWinner: false,
-                    isUnderAttack: false,
-                    userId,
-                    cards
-                };
-            }
-        );
-        const game: GameType = {
-            id,
-            players,
-            draw: shuffle([...draw, ...Boom.slice(0, players.length)]),
-            discard: []
-        };
+        const game: GameType = { id, players: [], finished: false, discard: [], draw: []};
         await this.db.set(`game.${id}`, game);
         await this.db.set(`room2game.${roomId}`, game.id);
+        return game;
+    }
+
+    // just send gameId
+    // public async startGame({ usersIds, roomId }: {
+    //     roomId: string;
+    //     usersIds: string[];
+    // }): Promise<GameType> {
+    //     const id = uuidv4();
+    //     const defuseCards = shuffle([...Defuse]);
+    //     const draw: Card[] = shuffle([...StartCards]);
+    //     const players = usersIds.map(
+    //         (userId, index): PlayerType => {
+    //             const defuse = defuseCards.pop();
+    //             if (!defuse) {
+    //                 throw new Error("Ups defuse me");
+    //             }
+    //             const cards = [defuse, ...draw.splice(0, 7)];
+    //             return {
+    //                 isActive: index === 0,
+    //                 isDead: false,
+    //                 isWinner: false,
+    //                 isUnderAttack: false,
+    //                 userId,
+    //                 cards
+    //             };
+    //         }
+    //     );
+    //     const game: GameType = {
+    //         id,
+    //         players,
+    //         draw: shuffle([...draw, ...Boom.slice(0, players.length)]),
+    //         discard: []
+    //     };
+    //     await this.db.set(`game.${id}`, game);
+    //     await this.db.set(`room2game.${roomId}`, game.id);
+    //     return game;
+    // }
+
+    public async joinPlayer({userId, gameId}: {userId: string, gameId: string}) {
+        let game = await this.db.getOrFail<GameType>(`game.${gameId}`, this.gameNotFound);
+        let user = await this.db.getOrFail<UserType>(`user.${userId}`, this.userNotFound);
+        if (game.players.filter(player => player.userId === userId).length === 0) {
+            game.players.push({
+                isActive: false,
+                isDead: false,
+                isWinner: false,
+                isUnderAttack: false,
+                userId: user.id,
+                cards: [],
+            });
+            await this.db.set(`game.${gameId}`, game);
+        }
+
         return game;
     }
 
@@ -246,15 +278,18 @@ export class GameService {
     public canSeeFuture(game: GameType) {
         return this.isInDiscardedWithoutNoBefore(game, Future);
     }
+
     public canShuffle(game: GameType) {
         return this.isInDiscardedWithoutNoBefore(game, Shuffle);
     }
+
     public canSkip(game: GameType) {
         return (
             this.isInDiscardedWithoutNoBefore(game, Skip) ||
             this.isInDiscardedWithoutNoBefore(game, Attack)
         );
     }
+
     public canGrabRandomCard(game: GameType) {
         return (
             this.isInDiscardedWithoutNoBefore(game, MelonCat) ||
@@ -268,6 +303,7 @@ export class GameService {
     private isCardOnPlayersHand(game: GameType, card: Card) {
         return !!game.players.find(player => player.cards.includes(card));
     }
+
     private async doActionOnGame(gameId: string) {
         const game = await this.db.get<GameType>(`game.${gameId}`);
         if (!game) {
@@ -393,9 +429,9 @@ export class GameService {
         if (attackDiscardedCard === undefined) {
             let lookingForPlayer = true;
             let increment: number = 1;
-            while(lookingForPlayer) {
+            while (lookingForPlayer) {
                 nextActivePlayerIndex = (activePlayerIndex + increment++) % game.players.length;
-                if(game.players[nextActivePlayerIndex].isDead === false) {
+                if (game.players[nextActivePlayerIndex].isDead === false) {
                     lookingForPlayer = false;
                 }
             }
