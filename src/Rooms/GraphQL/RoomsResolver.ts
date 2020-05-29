@@ -12,10 +12,11 @@ import {
     ID
 } from "type-graphql";
 import { ContainerInstance } from "typedi";
-import { RoomsService } from "../RoomsService";
+import { checkIsDefined, RoomsService } from "../RoomsService";
 import { Room } from "./Types/Room";
 import { Game } from "../../Game/GraphQL/Types/Game";
 import { GameService } from "../../Game/GameService";
+import { UsersService } from "../../Users/UsersService";
 
 @Resolver(type => Room)
 export class RoomsResolver {
@@ -56,5 +57,24 @@ export class RoomsResolver {
         const room = await container.get(RoomsService).addRoom({ name });
         await pubSub.publish("ROOMS", room);
         return room;
+    }
+
+    @Mutation(type => Room)
+    public async joinUserToRoom(
+        @Arg("roomId", type => String) roomId: string,
+        @Arg("userId", type => String) userId: string,
+        @PubSub() pubSub: PubSubEngine,
+        @Ctx("container") container: ContainerInstance
+    ) {
+        let room = await container.get(RoomsService).getRoom({ id: roomId });
+        let user = await container.get(UsersService).getUser({ id: userId });
+        user = checkIsDefined({ obj: user, name: "User" });
+        // if (user === undefined) {
+        //     throw new Error("User not found");
+        // }
+        if (room.users === undefined) {
+            room.users = [];
+        }
+        room.users.push(user);
     }
 }
