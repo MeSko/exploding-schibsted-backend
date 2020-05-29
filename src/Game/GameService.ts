@@ -76,16 +76,15 @@ export class GameService {
         usersIds: string[];
     }): Promise<GameType> {
         const id = uuidv4();
-        // const defuseCards = shuffle([...Defuse]);
+        const defuseCards = shuffle([...Defuse]);
         const draw: Card[] = shuffle([...StartCards]);
         const players = usersIds.map(
             (userId, index): PlayerType => {
-                // const defuse = defuseCards.pop();
-                // if (!defuse) {
-                //     throw new Error("Ups defuse me");
-                // }
-                // const cards = [defuse, ...draw.splice(0, 7)];
-                const cards = [...draw.splice(0, 7)];
+                const defuse = defuseCards.pop();
+                if (!defuse) {
+                    throw new Error("Ups defuse me");
+                }
+                const cards = [defuse, ...draw.splice(0, 7)];
                 return {
                     isActive: index === 0,
                     isDead: false,
