@@ -105,9 +105,9 @@ export class GameResolver {
     @Mutation(type => Game)
     async joinPlayer(
         @Arg("userId", type => ID) userId: string,
-        @Arg("gameId", type=> ID) gameId: string,
+        @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
-        @PubSub() pubSub: PubSubEngine,
+        @PubSub() pubSub: PubSubEngine
     ): Promise<Game> {
         const game = await container.get(GameService).joinPlayer({ userId, gameId });
         await pubSub.publish(`GAME${gameId}`, game);

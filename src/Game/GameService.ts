@@ -69,16 +69,11 @@ const intervalBetweenMove = 5 * 1000; // 5 seconds;
 export class GameService {
     readonly gameNotFound = "Game not found";
     readonly userNotFound = "User not found";
-    constructor(private db: PersistenceService) {
-    }
+    constructor(private db: PersistenceService) {}
 
-    public async createGame({
-        roomId
-    }: {
-        roomId: string;
-    }): Promise<GameType> {
+    public async createGame({ roomId }: { roomId: string }): Promise<GameType> {
         const id = uuidv4();
-        const game: GameType = { id, players: [], finished: false, discard: [], draw: []};
+        const game: GameType = { id, players: [], finished: false, discard: [], draw: [] };
         await this.db.set(`game.${id}`, game);
         await this.db.set(`room2game.${roomId}`, game.id);
         return game;
@@ -120,7 +115,7 @@ export class GameService {
     //     return game;
     // }
 
-    public async joinPlayer({userId, gameId}: {userId: string, gameId: string}) {
+    public async joinPlayer({ userId, gameId }: { userId: string; gameId: string }) {
         let game = await this.db.getOrFail<GameType>(`game.${gameId}`, this.gameNotFound);
         let user = await this.db.getOrFail<UserType>(`user.${userId}`, this.userNotFound);
         if (game.players.filter(player => player.userId === userId).length === 0) {
@@ -130,7 +125,7 @@ export class GameService {
                 isWinner: false,
                 isUnderAttack: false,
                 userId: user.id,
-                cards: [],
+                cards: []
             });
             await this.db.set(`game.${gameId}`, game);
         }
