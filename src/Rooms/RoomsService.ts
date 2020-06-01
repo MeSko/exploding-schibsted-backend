@@ -37,7 +37,7 @@ export class RoomsService {
         if (!room.users) {
             room.users = [];
         }
-        room.users.filter(user => user != userId);
+        room.users = room.users.filter(user => user != userId);
         await this.db.set(`room.${id}`, room);
         return room;
     }
