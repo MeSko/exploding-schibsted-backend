@@ -79,41 +79,34 @@ export class GameService {
         return game;
     }
 
-    // just send gameId
-    // public async startGame({ usersIds, roomId }: {
-    //     roomId: string;
-    //     usersIds: string[];
-    // }): Promise<GameType> {
-    //     const id = uuidv4();
-    //     const defuseCards = shuffle([...Defuse]);
-    //     const draw: Card[] = shuffle([...StartCards]);
-    //     const players = usersIds.map(
-    //         (userId, index): PlayerType => {
-    //             const defuse = defuseCards.pop();
-    //             if (!defuse) {
-    //                 throw new Error("Ups defuse me");
-    //             }
-    //             const cards = [defuse, ...draw.splice(0, 7)];
-    //             return {
-    //                 isActive: index === 0,
-    //                 isDead: false,
-    //                 isWinner: false,
-    //                 isUnderAttack: false,
-    //                 userId,
-    //                 cards
-    //             };
-    //         }
-    //     );
-    //     const game: GameType = {
-    //         id,
-    //         players,
-    //         draw: shuffle([...draw, ...Boom.slice(0, players.length)]),
-    //         discard: []
-    //     };
-    //     await this.db.set(`game.${id}`, game);
-    //     await this.db.set(`room2game.${roomId}`, game.id);
-    //     return game;
-    // }
+    public async startGame({ gameId }: {
+        gameId: string;
+    }): Promise<GameType> {
+        const game = await this.db.getOrFail<GameType>(`game.${gameId}`, this.gameNotFound);
+        const defuseCards = shuffle([...Defuse]);
+        const draw: Card[] = shuffle([...StartCards]);
+        game.players = game.players.map(
+            (player, index): PlayerType => {
+                const defuse = defuseCards.pop();
+                if (!defuse) {
+                    throw new Error("Ups defuse me");
+                }
+                const cards = [defuse, ...draw.splice(0, 7)];
+                return {
+                    isActive: index === 0,
+                    isDead: false,
+                    isWinner: false,
+                    isUnderAttack: false,
+                    userId: player.userId,
+                    cards
+                };
+            }
+        );
+        game.draw = shuffle([...draw, ...Boom.slice(0, game.players.length)]);
+        game.discard = [];
+        await this.db.set(`game.${gameId}`, game);
+        return game;
+    }
 
     public async joinPlayer({ userId, gameId }: { userId: string; gameId: string }) {
         let game = await this.db.getOrFail<GameType>(`game.${gameId}`, this.gameNotFound);

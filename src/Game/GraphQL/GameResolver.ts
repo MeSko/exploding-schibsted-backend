@@ -93,14 +93,13 @@ export class GameResolver {
         return await container.get(GameService).createGame({ roomId });
     }
 
-    // @Mutation(type => Game)
-    // async startGame(
-    //     @Arg("usersIds", type => [ID]) usersIds: string[],
-    //     @Arg("roomId", type => ID) roomId: string,
-    //     @Ctx("container") container: ContainerInstance
-    // ): Promise<Game> {
-    //     return await container.get(GameService).createGame({ usersIds, roomId });
-    // }
+    @Mutation(type => Game)
+    async startGame(
+        @Arg("gameId", type => ID) gameId: string,
+        @Ctx("container") container: ContainerInstance
+    ): Promise<Game> {
+        return await container.get(GameService).startGame({ gameId });
+    }
 
     @Mutation(type => Game)
     async joinPlayer(
