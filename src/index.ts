@@ -64,7 +64,7 @@ void (async function bootstrap() {
     const server = new ApolloServer({
         schema,
         cors: {
-            origin: [/^http:\/\/localhost:(\d)*$/],
+            origin: [/^http:\/\/localhost:(\d)*$/, "http://ngrok.io", "http://4083685b39a8.ngrok.io"],
             maxAge: 1728000,
             credentials: true
         },
