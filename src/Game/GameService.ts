@@ -247,13 +247,17 @@ export class GameService {
         }
 
         // Draw one card from attacked player
-        game.players.forEach(player => {
-            if (player.userId === targetUserId) {
-                grabbedCard = player.cards[Math.floor(Math.random() * player.cards.length)];
-                player.cards = player.cards.filter(card => card !== grabbedCard);
-            }
-        });
+        const targetPlayer = game.players.find(player => player.userId === targetUserId);
+        if (!targetPlayer) {
+            throw new Error("Can't grab card from nobody");
+        }
+        const grabbedCard =
+            targetPlayer.cards[Math.floor(Math.random() * targetPlayer.cards.length)];
+        targetPlayer.cards = targetPlayer.cards.filter(card => card !== grabbedCard);
 
+        if (!grabbedCard) {
+            return { game, grabbedCard: undefined, targetUserId };
+        }
         // Push drown card for attacking player
         game.players.forEach(player => {
             if (player.isActive) {
