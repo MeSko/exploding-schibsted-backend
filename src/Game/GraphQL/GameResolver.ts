@@ -142,13 +142,13 @@ export class GameResolver {
     public players(@Root() game: GameType): Player[] {
         return game.players;
     }
-    
+    /*
     @FieldResolver(type => Boolean)
     public canShuffle(@Root() game: GameType,  
                      @Ctx("container") container: ContainerInstance) {
         return container.get(GameService).canShuffle(game.id);
     }
-    /*
+   
      public canSeeFuture(game: GameType) {
         return this.isInDiscardedWithoutNoBefore(game, Future);
     }
