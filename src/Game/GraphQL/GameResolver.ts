@@ -15,14 +15,38 @@ import { Game } from "./Types/Game";
 import { GameService, GameType } from "../GameService";
 import { Card } from "./Types/Card";
 import { Player } from "./Types/Player";
+import { GameWithAction } from "./Types/GameWithAction";
+import {
+    CardsPlayed,
+    CardStolen,
+    DeckShuffled,
+    GameActionsUnion,
+    PayerJoined,
+    PlayerFinishedTurn
+} from "./Types/GameActions";
+import { Auth } from "../../Context";
 
+type gameChangedPayload = {
+    game: GameType;
+    actions: Array<typeof GameActionsUnion>;
+};
 @Resolver(type => Game)
 export class GameResolver {
     @Subscription(type => Game, {
         topics: ({ args, payload, context }) => `GAME${args.gameId}`
     })
-    game(@Root() game: GameType, @Arg("gameId", type => ID) gameId: string) {
-        return game;
+    game(@Root() payload: gameChangedPayload, @Arg("gameId", type => ID) gameId: string): GameType {
+        return payload.game;
+    }
+
+    @Subscription(type => GameWithAction, {
+        topics: ({ args, payload, context }) => `GAME${args.gameId}`
+    })
+    gameAction(
+        @Root() payload: gameChangedPayload,
+        @Arg("gameId", type => ID) gameId: string
+    ): GameWithAction {
+        return payload;
     }
 
     @Mutation(type => Game)
@@ -30,12 +54,23 @@ export class GameResolver {
         @Arg("card", type => Card) card: Card,
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
+        @Ctx("auth") auth: Auth | undefined,
         @PubSub() pubSub: PubSubEngine,
         @Arg("targetPlayerId", type => ID, { nullable: true }) targetPlayerId: string | undefined
     ): Promise<Game> {
+        const userId = auth?.userId;
+        if (!userId) {
+            throw new Error("Invalid user");
+        }
         // TODO check is card in my hand
         const game = await container.get(GameService).playCard({ card, gameId, targetPlayerId });
-        await pubSub.publish(`GAME${gameId}`, game);
+
+        const payload: gameChangedPayload = {
+            game,
+            actions: [new CardsPlayed({ id: userId }, [card])]
+        };
+
+        await pubSub.publish(`GAME${gameId}`, payload);
         return game;
     }
 
@@ -44,12 +79,22 @@ export class GameResolver {
         @Arg("cards", type => [Card]) cards: Card[],
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
+        @Ctx("auth") auth: Auth | undefined,
         @PubSub() pubSub: PubSubEngine,
         @Arg("targetPlayerId", type => ID) targetPlayerId: string
     ): Promise<Game> {
+        const userId = auth?.userId;
+        if (!userId) {
+            throw new Error("Invalid user");
+        }
         // TODO check is card in my hand
         const game = await container.get(GameService).play2Cards({ cards, gameId, targetPlayerId });
-        await pubSub.publish(`GAME${gameId}`, game);
+        const payload: gameChangedPayload = {
+            game,
+            actions: [new CardsPlayed({ id: userId }, cards)]
+        };
+
+        await pubSub.publish(`GAME${gameId}`, payload);
         return game;
     }
 
@@ -57,10 +102,19 @@ export class GameResolver {
     async shuffle(
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
+        @Ctx("auth") auth: Auth | undefined,
         @PubSub() pubSub: PubSubEngine
     ): Promise<Game> {
+        const userId = auth?.userId;
+        if (!userId) {
+            throw new Error("Invalid user");
+        }
         const game = await container.get(GameService).shuffleDeck(gameId);
-        await pubSub.publish(`GAME${gameId}`, game);
+        const payload: gameChangedPayload = {
+            game,
+            actions: [new DeckShuffled({ id: userId })]
+        };
+        await pubSub.publish(`GAME${gameId}`, payload);
         return game;
     }
 
@@ -78,10 +132,20 @@ export class GameResolver {
     async moveTurn(
         @Arg("gameId", type => ID) gameId: string,
         @Ctx("container") container: ContainerInstance,
+        @Ctx("auth") auth: Auth | undefined,
         @PubSub() pubSub: PubSubEngine
     ): Promise<Game> {
+        const userId = auth?.userId;
+        if (!userId) {
+            throw new Error("Invalid user");
+        }
         const game = await container.get(GameService).moveTurn(gameId);
-        await pubSub.publish(`GAME${gameId}`, game);
+
+        const payload: gameChangedPayload = {
+            game,
+            actions: [new PlayerFinishedTurn({ id: userId })]
+        };
+        await pubSub.publish(`GAME${gameId}`, payload);
         return game;
     }
 
@@ -105,22 +169,40 @@ export class GameResolver {
     async joinPlayer(
         @Arg("userId", type => ID) userId: string,
         @Arg("gameId", type => ID) gameId: string,
+        @Ctx("auth") auth: Auth | undefined,
         @Ctx("container") container: ContainerInstance,
         @PubSub() pubSub: PubSubEngine
     ): Promise<Game> {
         const game = await container.get(GameService).joinPlayer({ userId, gameId });
-        await pubSub.publish(`GAME${gameId}`, game);
+
+        const payload: gameChangedPayload = {
+            game,
+            actions: [new PayerJoined({ id: userId })]
+        };
+        await pubSub.publish(`GAME${gameId}`, payload);
         return game;
     }
 
     @Mutation(type => Game)
     async grabRandomCard(
         @Arg("gameId", type => ID) gameId: string,
+        @Ctx("auth") auth: Auth | undefined,
         @Ctx("container") container: ContainerInstance,
         @PubSub() pubSub: PubSubEngine
     ): Promise<Game> {
-        const game = await container.get(GameService).grabRandomCard(gameId);
-        await pubSub.publish(`GAME${gameId}`, game);
+        const userId = auth?.userId;
+        if (!userId) {
+            throw new Error("Invalid user");
+        }
+        const { game, targetUserId, grabbedCard } = await container
+            .get(GameService)
+            .grabRandomCard(gameId);
+
+        const payload: gameChangedPayload = {
+            game,
+            actions: [new CardStolen({ id: userId }, { id: targetUserId }, grabbedCard)]
+        };
+        await pubSub.publish(`GAME${gameId}`, payload);
         return game;
     }
 
@@ -142,26 +224,4 @@ export class GameResolver {
     public players(@Root() game: GameType): Player[] {
         return game.players;
     }
-    /*
-    @FieldResolver(type => Boolean)
-    public canShuffle(@Root() game: GameType,  
-                     @Ctx("container") container: ContainerInstance) {
-        return container.get(GameService).canShuffle(game.id);
-    }
-   
-     public canSeeFuture(game: GameType) {
-        return this.isInDiscardedWithoutNoBefore(game, Future);
-    }
-
-    public canShuffle(game: GameType) {
-        return this.isInDiscardedWithoutNoBefore(game, Shuffle);
-    }
-
-    public canSkip(game: GameType) {
-        return (
-            this.isInDiscardedWithoutNoBefore(game, Skip) ||
-            this.isInDiscardedWithoutNoBefore(game, Attack)
-        );
-    }
-    */
 }

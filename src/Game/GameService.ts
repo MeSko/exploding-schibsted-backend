@@ -79,9 +79,7 @@ export class GameService {
         return game;
     }
 
-    public async startGame({ gameId }: {
-        gameId: string;
-    }): Promise<GameType> {
+    public async startGame({ gameId }: { gameId: string }): Promise<GameType> {
         const game = await this.db.getOrFail<GameType>(`game.${gameId}`, this.gameNotFound);
         const defuseCards = shuffle([...Defuse]);
         const draw: Card[] = shuffle([...StartCards]);
@@ -244,7 +242,10 @@ export class GameService {
 
         const targetUserId = playedCards[0].targetPlayer;
 
-        let grabbedCard: Card;
+        if (!targetUserId) {
+            throw new Error("Can't grab card from nobody");
+        }
+
         // Draw one card from attacked player
         game.players.forEach(player => {
             if (player.userId === targetUserId) {
@@ -259,8 +260,9 @@ export class GameService {
                 player.cards.push(grabbedCard);
             }
         });
+
         await this.db.set(`game.${gameId}`, game);
-        return game;
+        return { game, grabbedCard, targetUserId };
     }
 
     public canSeeFuture(game: GameType) {
