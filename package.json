@@ -33,7 +33,7 @@
     "@types/graphql-type-json": "^0.3.2",
     "@types/lodash.groupby": "^4.6.6",
     "@types/lodash.keyby": "^4.6.6",
-    "apollo-server": "^2.10.1",
+    "apollo-server": "^2.25.4",
     "class-transformer": "^0.2.3",
     "cookie": "^0.4.1",
     "dataloader": "^2.0.0",
